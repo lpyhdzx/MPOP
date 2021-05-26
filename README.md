@@ -5,7 +5,7 @@ It can decompose an original matrix into central tensors (containing the core in
 
  ![image](images/fig-MPO.png)
  
- For more details about the technique of MPOP, refer to our pape:
+Details and code is coming soon...
  # Release Notes
  First version: 2021/05/21
 
@@ -17,17 +17,16 @@ pip install -r requirements.txt
 In lightweight fine-tuning, we use original ALBERT without fine-tuning as to be compressed. By performing MPO decomposition on each weight matrix, we obtain four auxiliary tensors and one central tensor per tensor set. This provides a good initialization for the task-specific distillation.
 
 ```shell
-bash run_lightweight_FT.sh
+# run lightweight finetuning
 ```
 ## Dimension squeezing
 In Dimension squeezing, we compute approiate truncation order for the whole model. In order to re-produce the results in paper, we prepare the model after lightweight fine-tuning.
 
 ```shell
-bash run_dimension_squeezing.sh
+# run dimension squeezing
 ```
 
 ## TODO
 - [ ] prepare data and code
-- [ ] upload models
-- [ ] time complexity
-- [ ] test result on GLUE
+- [ ] upload models in order to reproduce experiments
+- [ ] supplementary details for paper
