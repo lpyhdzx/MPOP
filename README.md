@@ -3,7 +3,7 @@ Here we present a novel pre-trained language models (PLM) compression approach b
 It can decompose an original matrix into central tensors (containing the core information) and auxiliary tensors (with only a small proportion of parameters). With the decomposed MPO structure, we propose a novel fine-tuning strategy by only updating the parameters from the auxiliary tensors, and design an optimization algorithm for MPO-based approximation over stacked network architectures. Our approach can be applied to original or compressed PLMs in a general way, which derives a lighter network and significantly reduces the parameters to be fine-tuned. 
  Extensive experiments have demonstrated the effectiveness of the proposed approach in model compression, especially the reduction in fine-tuning parameters (93% reduction on average).
 
- ![image](images/fig-MPO.png)
+ ![image](https://github.com/lpyhdzx/MPOP/blob/2a039b3cf2b109f69fe9a5152969c9dd57f21e01/images/fig-MPO.png)
  
 Details and code is coming soon...
  # Release Notes
