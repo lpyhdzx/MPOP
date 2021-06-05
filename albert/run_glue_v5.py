@@ -15,26 +15,20 @@ import os
 import sys
 from dataclasses import dataclass, field
 from typing import Callable, Dict, Optional
-sys.path.append('/home/pyliu/gitproj/MPO_compression/sshlab')
+# sys.path.append('/home/liupeiyu/acl2021_git/MPOP')
 import copy
 
 import numpy as np
 
 from transformers import AutoConfig, AlbertTokenizer, EvalPrediction, GlueDataset 
-############ transformers V4.0.0
 from modeling_albert import AlbertForSequenceClassification
 from trainer_albert_4 import Trainer
-# from trainer_4 import Trainer
 
-############ transformers V3.0.2
-# from compress_tools_v2.BERTCompress_albert_v1 import AlbertForSequenceClassification
-# from trainer_albert import Trainer
 
 from transformers import GlueDataTrainingArguments as DataTrainingArguments\
     
 from transformers import (
     HfArgumentParser,
-    # Trainer,
     TrainingArguments,
     glue_compute_metrics,
     glue_output_modes,
@@ -48,7 +42,6 @@ from transformers.trainer_callback import (
 )
 from compute_truncate_order import compute_order
 logger = logging.getLogger(__name__)
-# torch.cuda.set_device(0)
 
 
 @dataclass
@@ -265,12 +258,6 @@ def main():
         output_mode = glue_output_modes[data_args.task_name]
     except KeyError:
         raise ValueError("Task not found: %s" % (data_args.task_name))
-
-    # Load pretrained model and tokenizer
-    #
-    # Distributed training:
-    # The .from_pretrained methods guarantee that only one local process can concurrently
-    # download model & vocab.
 
     config = AutoConfig.from_pretrained(
         model_args.config_name if model_args.config_name else model_args.model_name_or_path,

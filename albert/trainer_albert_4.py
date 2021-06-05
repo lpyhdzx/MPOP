@@ -28,7 +28,7 @@ from pathlib import Path
 import random
 import sys
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
-sys.path.append('/home/pyliu/gitproj/MPO_compression/sshlab')
+# sys.path.append('/home/liupeiyu/acl2021_git/MPOP')
 
 
 # Integrations must be imported before ML frameworks:
