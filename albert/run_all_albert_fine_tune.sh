@@ -9,7 +9,7 @@ echo $gpu_num
 function run_task() {
   export CUDA_VISIBLE_DEVICES=$1
   COMMON_ARGS="--data_dir="$data_dir_base/$2" --model_name_or_path=${14} --tokenizer_name=albert-base-v2 --evaluation_strategy=steps --eval_steps=100 --logging_steps=50 --overwrite_output_dir --save_steps=50000 --gpu_num=$1 --task_name=$2 --warmup_step=$3 --learning_rate=$4 --num_train_epochs=$5 --per_device_train_batch_size=$6 --output_dir="$check_point_dir/$7" --run_name=$7 --max_seq_length=$8 --mpo_lr=$9 --mpo_layers=${10} --emb_trunc=${11} --linear_trunc=${12} --attention_trunc=${13} --max_steps=${15} --load_layer=${16} --update_mpo_layer=${17} ${18}"
-  nohup python $base_dir/run_glue_v5.py \
+  nohup python run_glue_v5.py \
       ${COMMON_ARGS} \
       --do_predict \
       --do_eval > log_albert/$7.log 2>&1 &

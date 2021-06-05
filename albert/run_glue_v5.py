@@ -15,7 +15,7 @@ import os
 import sys
 from dataclasses import dataclass, field
 from typing import Callable, Dict, Optional
-# sys.path.append('/home/liupeiyu/acl2021_git/MPOP')
+sys.path.append('/home/liupeiyu/acl2021_git/MPOP')
 import copy
 
 import numpy as np
@@ -40,7 +40,6 @@ from transformers.trainer_callback import (
     TrainerState,
     TrainerControl
 )
-from compute_truncate_order import compute_order
 logger = logging.getLogger(__name__)
 
 

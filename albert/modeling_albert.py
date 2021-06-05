@@ -25,8 +25,8 @@ import pdb
 import torch
 import torch.nn as nn
 from torch.nn import CrossEntropyLoss, MSELoss
-from compress_tools_v2.MPOtorch import LinearDecomMPO, MPOattention
 from compress_tools_v2.Matrix2MPO_beta import MPO
+from compress_tools_v2.MPOtorch import LinearDecomMPO, MPOattention
 from transformers.activations import ACT2FN
 from transformers.file_utils import (
     ModelOutput,
