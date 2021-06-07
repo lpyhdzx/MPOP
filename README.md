@@ -7,8 +7,8 @@ Extensive experiments have demonstrated the effectiveness of the proposed approa
 
  ![image](images/fig-MPO.png)
  
-Details and code is coming soon...
- # Release Notes
+For more details about the technique of MPOP, refer to our [paper](https://arxiv.org/abs/2106.02205), code is coming soon...
+# Release Notes
  First version: 2021/05/21
 
  # Installation
