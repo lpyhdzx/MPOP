@@ -5,7 +5,7 @@ It can decompose an original matrix into central tensors (containing the core in
 
  ![image](images/fig-MPO.png)
  
-Details and code is coming soon...
+For more details about the technique of MPOP, refer to our [paper](https://arxiv.org/abs/2106.02205), code is coming soon...
  # Release Notes
  First version: 2021/05/21
 
