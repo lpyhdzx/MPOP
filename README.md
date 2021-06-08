@@ -17,16 +17,19 @@ pip install -r requirements.txt
 In lightweight fine-tuning, we use original ALBERT without fine-tuning as to be compressed. By performing MPO decomposition on each weight matrix, we obtain four auxiliary tensors and one central tensor per tensor set. This provides a good initialization for the task-specific distillation.
 
 ```shell
-# run lightweight finetuning
+run_task 0 SST-2 500 2.7e-5 3.0 32 sst_lf 128 2.8e-6 word_embed,FFN_1,FFN_2,attention,pooler 480 384 256 albert-base-v2 -1 noload Noupdate --tensor_learn\ --pooler_trunc=256\ --load_best_model_at_end\ --metric_for_best_model="acc"\ --do_train
 ```
 ## Dimension squeezing
-In Dimension squeezing, we compute approiate truncation order for the whole model. In order to re-produce the results in paper, we prepare the model after lightweight fine-tuning.
+In Dimension squeezing, we compute approiate truncation order for the whole model. In order to re-produce the results in paper, we prepare the model after lightweight fine-tuning. run [run_all_albert_fine_tune.sh](https://github.com/lpyhdzx/MPOP/blob/ac958a78e1cf41d7f4117582a1aa2df3edf7e6fa/albert/run_all_albert_fine_tune.sh)
+
+albert models [google drive](https://drive.google.com/file/d/1shpcqfDemRaWhxIwcczDB_YePIyyF0bk/view?usp=sharing)
 
 ```shell
-# run dimension squeezing
+# e.g. SST-2
+run_task 0 SST-2 500 2.7e-5 3.0 32 sst_rep 128 2.8e-6 word_embed 240 384 256 $check_point_dir/sst_paper1 -1 word_embed Noupdate --tensor_learn\ --pooler_trunc=256
 ```
 
 ## TODO
-- [ ] prepare data and code
-- [ ] upload models in order to reproduce experiments
+- [x] prepare data and code
+- [x] upload models in order to reproduce experiments
 - [ ] supplementary details for paper

@@ -96,9 +96,8 @@ class EmbeddingMPO(nn.Module):
     '''
     use MPO decompose word embedding
     '''
-    def __init__(self, num_embeddings, embedding_dim, mpo_input_shape, mpo_output_shape, truncate_num, **kwargs):
+    def __init__(self, embedding_dim, mpo_input_shape, mpo_output_shape, truncate_num, **kwargs):
         super(EmbeddingMPO, self).__init__()
-        self.num_embeddings = num_embeddings
         self.embedding_dim = embedding_dim
         self.mpo = MPO(mpo_input_shape, mpo_output_shape, truncate_num)
         self.tensor_set = None
@@ -250,7 +249,7 @@ class AlbertEmbeddings(nn.Module):
             self.use_mpo = True
             logger.info("Check Using EmbeddingMPO with {}".format(config.emb_trunc))
             self.mpo_input_shape, self.mpo_output_shape, self.truncate_num = [5,10,10,10,6], [2,2,4,4,2], config.emb_trunc
-            self.word_embeddings_mpo = EmbeddingMPO(config.embed_size, config.hidden_size, self.mpo_input_shape,
+            self.word_embeddings_mpo = EmbeddingMPO(config.hidden_size, self.mpo_input_shape,
                                                     self.mpo_output_shape,
                                                     self.truncate_num)
             self.mpo = MPO(self.mpo_input_shape, self.mpo_output_shape, self.truncate_num)

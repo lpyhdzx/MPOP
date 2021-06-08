@@ -155,20 +155,10 @@ class RankHander(TrainerCallback):
 class CustomArguments:
     gpu_num : str = field(default='3',
                           metadata = {"help" : "which gpu to use"})
-    use_dropout: bool = field(default=False,
-                              metadata={"help": "whether use dropout in mpo"})
-    use_layernorm: bool = field(default=False,
-                                metadata={"help": "whether use layernorm in mpo"})
-    use_mpo: bool = field(default=False,
-                          metadata={"help": "whether use mpo compress, default is true"})
-    warmup_ratio: float = field(default=None,
-                                metadata={"help": "ratio of total steps to warmup"})
     mpo_lr: float = field(default=None,
                           metadata={"help": "mpo layer learning rate"})
     word_embed: bool = field(default=False,
                              metadata={"help": "whether use word_embed mpo"})
-    embed_size: int = field(default=30522,
-                            metadata={"help": "init word embeddings rows"})
     mpo_layers : str = field(default='word_embed,attention',
                              metadata={"help" : "layers need to use mpo format"})
     emb_trunc : int = field(default=1000,
@@ -179,22 +169,14 @@ class CustomArguments:
                                   metadata={"help":"Truncate Rank of attention"})
     pooler_trunc : int = field(default=1000,
                                metadata={"help":"Truncate Rank of pooler"})
-    teacher : bool = field(default=False,
-                           metadata={"help":"Useless"})
     load_layer : str = field(default='',
                              metadata={"help":"Layers which use to load"})
     update_mpo_layer : str = field(default='',
                                metadata={"help":"Layers which to update"})
-    fix_all : bool = field(default=False,
-                           metadata={"help":"Whether fix all layers except for mpo layers"})
-    final_lr : bool = field(default=0,
-                            metadata={"help" : "Final lr"})
     tensor_learn : Optional[bool] = field(default=False,
                                 metadata={"help":"Whether use tensor learn"})
     rank_step : bool = field(default=False,
                              metadata={"help" : "Whether use rank_step"})
-    do_split : bool = field(default=False,
-                            metadata={"help" : "Whether use split train and dev, default to 0.8 ratio"})
     balance_attention : bool = field(default=False,
                             metadata={"help" : "Whether use [4,4,4,4,3]&[4,4,4,4,3] to replace [3,4,4,4,4]&[4,4,4,4,3]"})
     load_full : bool = field(default=False,
@@ -273,12 +255,12 @@ def main():
         model_args.tokenizer_name if model_args.tokenizer_name else model_args.model_name_or_path,
         cache_dir=model_args.cache_dir,
     )
-    assert not ('word_embed' in config.load_layer and 'albert-base' in model_args.model_name_or_path) # 如果用到了albert-base模型不可能load 原有的mpo layer
+    assert not ('word_embed' in config.load_layer and 'albert-base' in model_args.model_name_or_path) 
     if config.load_full:
-        config.emb_trunc = 1000
-        config.linear_trunc = 1000
-        config.attention_trunc = 1000
-        config.pooler_trunc = 1000
+        config.emb_trunc = float('inf')
+        config.linear_trunc = float('inf')
+        config.attention_trunc = float('inf')
+        config.pooler_trunc = float('inf')
     model = AlbertForSequenceClassification.from_pretrained(
         model_args.model_name_or_path,
         from_tf=bool(".ckpt" in model_args.model_name_or_path),
@@ -332,38 +314,19 @@ def main():
     logger.info("Total and trainable params: {}".format(str(get_parameter_number(model))))
 
     # Get datasets
-    if config.do_split:
-        total_train = (
-            GlueDataset(data_args, tokenizer=tokenizer, cache_dir=model_args.cache_dir) if training_args.do_train else None
-        )
-        train_split = int(0.8*len(total_train))
-        train_dataset = copy.deepcopy(total_train)
-        train_dataset.features = total_train.features[:train_split]
-        if training_args.do_eval:
-            eval_dataset = copy.deepcopy(total_train) 
-            eval_dataset.features = eval_dataset.features[train_split:]
-        else:
-            eval_dataset = None
-
-        test_dataset = (
-            GlueDataset(data_args, tokenizer=tokenizer, mode="dev", cache_dir=model_args.cache_dir)
-            if training_args.do_predict
-            else None
-        )
-    else:
-        train_dataset = (
-            GlueDataset(data_args, tokenizer=tokenizer, cache_dir=model_args.cache_dir) if training_args.do_train else None
-        )
-        eval_dataset = (
-            GlueDataset(data_args, tokenizer=tokenizer, mode="dev", cache_dir=model_args.cache_dir)
-            if training_args.do_eval
-            else None
-        )
-        test_dataset = (
-            GlueDataset(data_args, tokenizer=tokenizer, mode="test", cache_dir=model_args.cache_dir)
-            if training_args.do_predict
-            else None
-        )
+    train_dataset = (
+        GlueDataset(data_args, tokenizer=tokenizer, cache_dir=model_args.cache_dir) if training_args.do_train else None
+    )
+    eval_dataset = (
+        GlueDataset(data_args, tokenizer=tokenizer, mode="dev", cache_dir=model_args.cache_dir)
+        if training_args.do_eval
+        else None
+    )
+    test_dataset = (
+        GlueDataset(data_args, tokenizer=tokenizer, mode="test", cache_dir=model_args.cache_dir)
+        if training_args.do_predict
+        else None
+    )
 
     def build_compute_metrics_fn(task_name: str) -> Callable[[EvalPrediction], Dict]:
         def compute_metrics_fn(p: EvalPrediction):
@@ -380,8 +343,6 @@ def main():
     else:
         training_args.mpo_lr = training_args.learning_rate
     training_args.update_mpo_layer = custom_args.update_mpo_layer
-    training_args.fix_all = custom_args.fix_all
-    training_args.final_lr = custom_args.final_lr
     training_args.step_train = False
     training_args.step_dir = "/mnt/checkpoint/albert/step_dir"
     training_args.linear_step = config.linear_trunc
@@ -450,49 +411,27 @@ def main():
             eval_results.update(eval_result)
 
     if training_args.do_predict:
-        if config.do_split:
-            test_results = {}
-            logging.info("*** Test ***")
-            test_datasets = [test_dataset]
-            if data_args.task_name == "mnli":
-                mnli_mm_data_args = dataclasses.replace(data_args, task_name="mnli-mm")
-                test_datasets.append(
-                    GlueDataset(mnli_mm_data_args, tokenizer=tokenizer, mode="dev", cache_dir=model_args.cache_dir)
-                )
-            for test_dataset in test_datasets:
-                #trainer.compute_metrics = build_compute_metrics_fn(eval_dataset.args.task_name)
-                test_result = trainer.evaluate(eval_dataset=test_dataset)
-                output_test_file = os.path.join(
-                    training_args.output_dir, f"test_results_{test_dataset.args.task_name}.txt"
-                )
-                if trainer.is_world_process_zero():
-                    with open(output_test_file, "w") as writer:
-                        logger.info("***** Test results {} *****".format(test_dataset.args.task_name))
-                        for key, value in test_result.items():
-                            logger.info("  %s = %s", key, value)
-                            writer.write("%s = %s\n" % (key, value))
-                test_results.update(test_result)
-        else:
-            test_results = {}
-            logging.info("*** Test ***")
-            test_datasets = [test_dataset]
-            for test_dataset in test_datasets:
-                predictions = trainer.predict(test_dataset=test_dataset).predictions
-                if output_mode == "classification":
-                    predictions = np.argmax(predictions, axis=1)
-                output_test_file = os.path.join(
-                    training_args.output_dir, f"test_results_{test_dataset.args.task_name}.txt"
-                )
-                if trainer.is_world_process_zero():
-                    with open(output_test_file, "w") as writer:
-                        logger.info("***** Test results {} *****".format(test_dataset.args.task_name))
-                        writer.write("index\tprediction\n")
-                        for index, item in enumerate(predictions):
-                            if output_mode == "regression":
-                                writer.write("%d\t%3.3f\n" % (index, item))
-                            else:
-                                item = test_dataset.get_labels()[item]
-                                writer.write("%d\t%s\n" % (index, item))
+        
+        test_results = {}
+        logging.info("*** Test ***")
+        test_datasets = [test_dataset]
+        for test_dataset in test_datasets:
+            predictions = trainer.predict(test_dataset=test_dataset).predictions
+            if output_mode == "classification":
+                predictions = np.argmax(predictions, axis=1)
+            output_test_file = os.path.join(
+                training_args.output_dir, f"test_results_{test_dataset.args.task_name}.txt"
+            )
+            if trainer.is_world_process_zero():
+                with open(output_test_file, "w") as writer:
+                    logger.info("***** Test results {} *****".format(test_dataset.args.task_name))
+                    writer.write("index\tprediction\n")
+                    for index, item in enumerate(predictions):
+                        if output_mode == "regression":
+                            writer.write("%d\t%3.3f\n" % (index, item))
+                        else:
+                            item = test_dataset.get_labels()[item]
+                            writer.write("%d\t%s\n" % (index, item))
     return eval_results
 
 

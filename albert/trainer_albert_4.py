@@ -557,10 +557,7 @@ class Trainer:
                 optimizer_grouped_parameters = optimizer_grouped_parameters[:-1]
             else:
                 logger.info("Check update mpo_layers using: {}".format(self.args.mpo_lr))
-            if self.args.fix_all:
-                optimizer_grouped_parameters = optimizer_grouped_parameters[1:]
-                assert len(optimizer_grouped_parameters) > 0
-                logger.info("Check fix all except mpo_layers")
+
             self.optimizer = AdamW(
                 optimizer_grouped_parameters,
                 lr=self.args.learning_rate,
@@ -568,14 +565,8 @@ class Trainer:
                 eps=self.args.adam_epsilon,
             )
         if self.lr_scheduler is None:
-            if self.args.final_lr > 0:
-                atleast = self.args.final_lr / self.args.learning_rate
-                logger.info("Check use lr at least: {}".format(atleast*self.args.learning_rate))
-                self.lr_scheduler = get_linear_schedule_with_warmup_atleast(
-                    self.optimizer, num_warmup_steps=self.args.warmup_steps, num_training_steps=num_training_steps,atleast=atleast
-                )      
-            else:
-                self.lr_scheduler = get_linear_schedule_with_warmup(
+            
+            self.lr_scheduler = get_linear_schedule_with_warmup(
                     self.optimizer, num_warmup_steps=self.args.warmup_steps, num_training_steps=num_training_steps
                 )
 
@@ -887,20 +878,16 @@ class Trainer:
 
                     if self.control.change_rank:
                         self.change_count += 1
-                        # ran = random.random()
                         ran = bonds_value.pop(0)
                         self.state.ran = ran
-                        # if ran < 0.342: # 以前的是ran < 0.47:
-                        if ran == 1: # 480+384+192 = 1056
+                        if ran == 1:
                             self.args.linear_step -= 1
                             model.albert.encoder.albert_layer_groups[0].albert_layers[0].step_trunc(step_num=self.args.linear_step)
                             logger.info("Check truncate linear Total trainable Parameter Count: {}M truncate at: {}".format(get_parameter_number(model)['Trainable(M)'], self.args.linear_step))
-                        # elif ran < 0.572: # 以前是< 0.66:
                         elif ran == 2:
                             self.args.attention_step -= 1
                             model.albert.encoder.albert_layer_groups[0].albert_layers[0].attention.step_trunc(step_num=self.args.attention_step)
                             logger.info("Check truncate attention Total trainable Parameter Count: {}M truncate at: {}".format(get_parameter_number(model)['Trainable(M)'], self.args.attention_step))
-                        # elif ran >= 0.572:
                         elif ran == 0:
                             self.args.emb_step -= 1
                             model.albert.embeddings.step_trunc(step_num=self.args.emb_step)
