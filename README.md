@@ -18,7 +18,7 @@ For more details about the technique of MPOP, refer to our [paper](https://arxiv
 
  # Installation
  ```shell
-pip install mpo-lab
+pip install mpo_lab
  ```
 ## Lightweight fine-tuning
 In lightweight fine-tuning, we use original ALBERT without fine-tuning as to be compressed. By performing MPO decomposition on each weight matrix, we obtain four auxiliary tensors and one central tensor per tensor set. This provides a good initialization for the task-specific distillation. Refer to [run_all_albert_fine_tune.sh](https://github.com/lpyhdzx/MPOP/blob/ac958a78e1cf41d7f4117582a1aa2df3edf7e6fa/albert/run_all_albert_fine_tune.sh)
