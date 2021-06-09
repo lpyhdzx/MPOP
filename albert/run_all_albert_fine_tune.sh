@@ -16,7 +16,10 @@ function run_task() {
 
 ############################ lightweight fine-tuning
 # sst-2
-run_task 0 SST-2 500 2.7e-5 3.0 32 sst_lf 128 2.8e-6 word_embed,FFN_1,FFN_2,attention,pooler 480 384 256 albert-base-v2 -1 noload Noupdate --tensor_learn\ --pooler_trunc=256\ --load_best_model_at_end\ --metric_for_best_model="acc"\ --do_train
+# run_task 0 SST-2 500 2.7e-5 3.0 32 sst_lf 128 2.8e-6 word_embed,FFN_1,FFN_2,attention,pooler 480 384 256 albert-base-v2 -1 noload Noupdate --tensor_learn\ --pooler_trunc=256\ --load_best_model_at_end\ --metric_for_best_model="acc"\ --do_train
+
+run_task 6 SST-2 500 2.7e-5 3.0 32 sst_lf2 128 2.8e-6 word_embed,FFN_1,FFN_2,attention,pooler 480 384 256 albert-base-v2 -1 noload Noupdate --tensor_learn\ --pooler_trunc=256\ --load_best_model_at_end\ --metric_for_best_model="acc"\ --do_train
+
 
 ############################ dimension squeezing
 # sst-2

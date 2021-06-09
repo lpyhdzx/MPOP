@@ -7,29 +7,37 @@ This paper presents a novel pre-trained language models (PLM) compression approa
 
  ![image](images/fig-MPO.png)
  
-For more details about the technique of MPOP, refer to our [paper](https://arxiv.org/abs/2106.02205), code is coming soon...
+For more details about the technique of MPOP, refer to our [paper](https://arxiv.org/abs/2106.02205)
  # Release Notes
- First version: 2021/05/21
+ - First version: 2021/05/21
+ - add albert code: 2021/06/08
+
+# Requirements
+- python 3.7
+- torch >= 1.8.0
 
  # Installation
  ```shell
-pip install -r requirements.txt
+pip install mpo-lab
  ```
 ## Lightweight fine-tuning
 In lightweight fine-tuning, we use original ALBERT without fine-tuning as to be compressed. By performing MPO decomposition on each weight matrix, we obtain four auxiliary tensors and one central tensor per tensor set. This provides a good initialization for the task-specific distillation. Refer to [run_all_albert_fine_tune.sh](https://github.com/lpyhdzx/MPOP/blob/ac958a78e1cf41d7f4117582a1aa2df3edf7e6fa/albert/run_all_albert_fine_tune.sh)
 
+Important arguments:
 ```shell
-run_task 0 SST-2 500 2.7e-5 3.0 32 sst_lf 128 2.8e-6 word_embed,FFN_1,FFN_2,attention,pooler 480 384 256 albert-base-v2 -1 noload Noupdate --tensor_learn\ --pooler_trunc=256\ --load_best_model_at_end\ --metric_for_best_model="acc"\ --do_train
+--data_dir          Path to load dataset
+--mpo_lr            Learning rate of tensors produced by MPO
+--mpo_layers        Name of components to be decomposed with MPO
+--emb_trunc         Truncation number of the central tensor in word embedding layer
+--linear_trunc      Truncation number of the central tensor in linear layer
+--attention_trunc   Truncation number of the central tensor in attention layer
+--load_layer        Name of components to be loaded from exist checkpoint file
+--update_mpo_layer  Name of components to be update when training the model
 ```
 ## Dimension squeezing
 In Dimension squeezing, we compute approiate truncation order for the whole model. In order to re-produce the results in paper, we prepare the model after lightweight fine-tuning. Refer to [run_all_albert_fine_tune.sh](https://github.com/lpyhdzx/MPOP/blob/ac958a78e1cf41d7f4117582a1aa2df3edf7e6fa/albert/run_all_albert_fine_tune.sh)
 
 albert models [google drive](https://drive.google.com/file/d/1shpcqfDemRaWhxIwcczDB_YePIyyF0bk/view?usp=sharing)
-
-```shell
-# e.g. SST-2
-run_task 0 SST-2 500 2.7e-5 3.0 32 sst_rep 128 2.8e-6 word_embed 240 384 256 $check_point_dir/sst_paper1 -1 word_embed Noupdate --tensor_learn\ --pooler_trunc=256
-```
 
 ## TODO
 - [x] prepare data and code
