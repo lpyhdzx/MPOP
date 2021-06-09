@@ -16,6 +16,7 @@ For more details about the technique of MPOP, refer to our [paper](https://arxiv
 - python 3.7
 - torch >= 1.8.0
 
+
  # Installation
  ```shell
 pip install mpo_lab
@@ -40,6 +41,8 @@ In Dimension squeezing, we compute approiate truncation order for the whole mode
 albert models [google drive](https://drive.google.com/file/d/1shpcqfDemRaWhxIwcczDB_YePIyyF0bk/view?usp=sharing)
 
 ## TODO
+
 - [x] prepare data and code
 - [x] upload models in order to reproduce experiments
 - [ ] supplementary details for paper
+
