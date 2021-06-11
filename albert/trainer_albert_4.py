@@ -803,8 +803,8 @@ class Trainer:
         self.change_list = ['linear_step','attention_step','emb_step']
         self.state.ran = -1
         self.change_count = 0
-        if self.args.rank_step:
-            bonds_value = compute_order()
+        # if self.args.rank_step:
+        #     bonds_value = compute_order()
 
         for epoch in range(epochs_trained, num_train_epochs):
             if isinstance(train_dataloader, DataLoader) and isinstance(train_dataloader.sampler, DistributedSampler):

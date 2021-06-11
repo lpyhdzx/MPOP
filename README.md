@@ -40,6 +40,22 @@ In Dimension squeezing, we compute approiate truncation order for the whole mode
 
 albert models [google drive](https://drive.google.com/file/d/1shpcqfDemRaWhxIwcczDB_YePIyyF0bk/view?usp=sharing)
 
+## Acknowledgment
+Any scientific publications that use our codes should cite the following paper as the reference:
+```
+@article{Liu-ACL-2021,
+  author    = {Peiyu Liu and
+               Ze{-}Feng Gao and
+               Wayne Xin Zhao and
+               Z. Y. Xie and
+               Zhong{-}Yi Lu and
+               Ji{-}Rong Wen},
+  title     = "Enabling Lightweight Fine-tuning for Pre-trained Language Model Compression
+               based on Matrix Product Operators",
+  booktitle = {{ACL}},
+  year      = {2021},
+}
+```
 ## TODO
 
 - [x] prepare data and code

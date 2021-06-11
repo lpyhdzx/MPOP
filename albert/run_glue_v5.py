@@ -88,18 +88,18 @@ class RankHander(TrainerCallback):
     def __init__(self):
         self.window_size = 10
         self.thresh = THRESH
-        # self.thresh = 0.005 # RTE, 因为RTE本身的loss就很小了，这个如果选择0.05感觉就没完全手敛
+        # self.thresh = 0.005 # RTE
         self.linear_init = 384
         ## stop linear
         self.linear_stop = STOP_RANK
 
     def on_train_begin(self, args, state, control, **kwargs):
         self.metric_window = [0 for i in range(self.window_size)]
-        # self.best_perf = 0.12 # 从当前收敛的满秩中找到(SST-2)
+        # self.best_perf = 0.12 # SST-2
         # self.best_perf = 0.1 # qnli
         # self.best_perf = 0.31 # mnli
         # self.best_perf = 0.03 # RTE
-        self.best_perf = 0.33 # CoLA 从eval loss中找到合适的损失值然后保持不变
+        self.best_perf = 0.33 # CoLA
         # self.best_perf = 0.03 # sts-b
         # self.best_perf = 0.2 # mrpc
         # self.best_perf = 0.191 # qqp
@@ -112,7 +112,6 @@ class RankHander(TrainerCallback):
         self.metric_window.append(state.loss)
         self.monitor_loss = sum(self.metric_window) / self.window_size
         if state.ran == 2:
-            # 发现对于atention来说总是很难收敛，所以这里需要多跑几步
             CONVERGE = CONVERGE_base + 20
         else:
             CONVERGE = CONVERGE_base
@@ -127,27 +126,22 @@ class RankHander(TrainerCallback):
         if self.monitor_loss < (self.best_perf + self.thresh) and self.converge < CONVERGE:
             self.converge += 1
             logger.info("Check converge: {}".format(self.converge))
-        elif self.monitor_loss > (self.best_perf + self.thresh) and self.no_converge < NO_CONVERGE: # 没有收敛
+        elif self.monitor_loss > (self.best_perf + self.thresh) and self.no_converge < NO_CONVERGE: 
             self.no_converge += 1
             logger.info("Check no converge {}".format(self.no_converge))
         else:
             if self.converge > CONVERGE-1:
                 logger.info("finish one rank attempt, continue ranks")
                 self.converge += 1
-                # if args.linear_step < START_SAVE and args.linear_step % SAVE_STEP == 0:
                 if args.linear_step % SAVE_STEP == 0 or args.attention_step % SAVE_STEP == 0 or args.emb_step % SAVE_STEP == 0:
                     logger.info("Check save at {}...".format(args.linear_step))
                     control.should_save = True
             elif self.no_converge > NO_CONVERGE-1:
                 logger.info("finish one rank attempt, failed and stop training...")
                 control.should_save = True
-                # control.pop_structure = True
-                control.should_training_stop = True # 如果用采样来做这个问题就不用pop structure了
+                control.should_training_stop = True 
                 self.no_converge += 1
-                # if args.linear_step < self.linear_stop: # 低于最低的rank则停止训练，因为后面基本都不会收敛了
-                #     control.should_training_stop = True
 
-                # Initialize our Trainer
             control.change_rank = True
 
         return control 
@@ -302,10 +296,7 @@ def main():
             if 'mpo_att' not in config.load_layer:
                 model.albert.encoder.albert_layer_groups[0].albert_layers[0].attention.from_pretrained_mpo()
                 model.albert.encoder.albert_layer_groups[0].albert_layers[0].attention.from_pretrained_dense()
-            # del model.albert.encoder.albert_layer_groups[0].albert_layers[0].attention.query
-            # del model.albert.encoder.albert_layer_groups[0].albert_layers[0].attention.key
-            # del model.albert.encoder.albert_layer_groups[0].albert_layers[0].attention.value
-            # del model.albert.encoder.albert_layer_groups[0].albert_layers[0].attention.dense
+
         if 'pooler' in config.mpo_layers:
             if 'pooler' not in config.load_layer:
                 model.albert.from_pretrained_pooler()
