@@ -43,7 +43,7 @@ albert models [google drive](https://drive.google.com/file/d/1shpcqfDemRaWhxIwcc
 ## Acknowledgment
 Any scientific publications that use our codes should cite the following paper as the reference:
 ```
-@article{Liu-ACL-2021,
+@inproceedings{Liu-ACL-2021,
   author    = {Peiyu Liu and
                Ze{-}Feng Gao and
                Wayne Xin Zhao and
