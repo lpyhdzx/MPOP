@@ -73,6 +73,7 @@ ALBERT_PRETRAINED_MODEL_ARCHIVE_LIST = [
 ]
 
 def CalMPONum(strc_name,Dbonds):
+    # TODO: use parameter to control DphsIn and DphysOut rather than hard code
     if strc_name == 'linear':
         DphysIn,DphysOut = [4,4,8,6,4],[3,4,4,4,4]
     elif strc_name == 'attention':
@@ -360,31 +361,7 @@ class AlbertAttention(nn.Module):
             self.dense_mpo = LinearDecomMPO(self.mpo_input_shape, self.mpo_output_shape, self.trunc_num,tensor_learn=self.config.tensor_learn)
             self.from_pretrained_dense()
         elif "mpo_att" in config.mpo_layers:
-            self.use_mpo = True
-            self.trunc_num = config.attention_trunc
-            logger.info("Check Using query with {}".format(self.trunc_num))
-            logger.info("Check Using key/value with {}".format(self.trunc_num))
-            self.input_shape = (config.batch_size * config.max_seq_length, config.hidden_size)
-            self.query = nn.Linear(config.hidden_size, self.all_head_size)
-            self.key = nn.Linear(config.hidden_size, self.all_head_size)
-            self.value = nn.Linear(config.hidden_size, self.all_head_size)
-            if config.hidden_size == 1024:
-                self.mpo_input_shape, self.mpo_output_shape=[4,4,4,4,4],[4,4,4,4,4]
-            else:
-                if config.balance_attention:
-                    logger.info("use balance attention [192,192]")
-                    self.mpo_input_shape, self.mpo_output_shape=[3,4,4,4,4],[4,4,4,4,3]
-                else:
-                    self.mpo_input_shape, self.mpo_output_shape=[4,4,4,4,3],[4,4,4,4,3]
-            att_input_shape = [self.num_attention_heads * self.mpo_input_shape[0]] + self.mpo_input_shape[1:] # 192,4,4,4,4
-
-            self.atten_mpo = MPOattention(att_input_shape, self.mpo_output_shape,self.trunc_num,tensor_learn=self.config.tensor_learn)
-            self.value_mpo = LinearDecomMPO(self.mpo_input_shape, self.mpo_output_shape,self.trunc_num,tensor_learn=self.config.tensor_learn)
-
-            self.from_pretrained_mpo()
-            self.dense = nn.Linear(config.hidden_size, config.hidden_size)
-            self.dense_mpo = LinearDecomMPO(self.mpo_input_shape, self.mpo_output_shape, self.trunc_num,tensor_learn=self.config.tensor_learn)
-            self.from_pretrained_dense()
+            raise NotImplementedError
 
         else:
             self.query = nn.Linear(config.hidden_size, self.all_head_size)
@@ -439,9 +416,6 @@ class AlbertAttention(nn.Module):
             query_layer = self.transpose_for_scores(mixed_query_layer)
             key_layer = self.transpose_for_scores(mixed_key_layer)
             value_layer = self.transpose_for_scores(mixed_value_layer)
-        elif 'mpo_att' in self.config.mpo_layers:
-            mixed_value_layer = self.value_mpo(input_ids)
-            value_layer = self.transpose_for_scores(mixed_value_layer)
         else:
             mixed_query_layer = self.query(input_ids)
             mixed_key_layer = self.key(input_ids)
@@ -452,11 +426,7 @@ class AlbertAttention(nn.Module):
             value_layer = self.transpose_for_scores(mixed_value_layer)
 
         # Take the dot product between "query" and "key" to get the raw attention scores.
-        if 'mpo_att' in self.config.mpo_layers:
-            # attention_scores = torch.matmul(att_layer, x_trans.transpose(-1,-2))
-            attention_scores = self.atten_mpo(input_ids) # 32,12,128,128
-        else:
-            attention_scores = torch.matmul(query_layer, key_layer.transpose(-1, -2))
+        attention_scores = torch.matmul(query_layer, key_layer.transpose(-1, -2))
         attention_scores = attention_scores / math.sqrt(self.attention_head_size)
         if attention_mask is not None:
             # Apply the attention mask is (precomputed for all layers in BertModel forward() function)
@@ -478,7 +448,7 @@ class AlbertAttention(nn.Module):
         context_layer = context_layer.permute(0, 2, 1, 3).contiguous()
 
         # Should find a better way to do this
-        if 'attention' in self.config.mpo_layers or "mpo_att" in self.config.mpo_layers:
+        if 'attention' in self.config.mpo_layers:
             w = (self.mpo.mpo2matrix(self.dense_mpo.tensor_set).t()
                 .view(self.num_attention_heads, self.attention_head_size, self.hidden_size)
                 .to(context_layer.dtype)
@@ -498,7 +468,7 @@ class AlbertAttention(nn.Module):
         return (layernormed_context_layer, attention_probs) if output_attentions else (layernormed_context_layer,)
     
     def from_pretrained_dense(self):
-        if 'attention' in self.config.mpo_layers or 'mpo_att' in self.config.mpo_layers:
+        if 'attention' in self.config.mpo_layers:
             logger.info("Check Using dense with {}".format(self.config.attention_trunc))
             self.mpo = MPO(self.mpo_input_shape, self.mpo_output_shape, 10000)
             mpo_tensor_set, _, _ = self.mpo.matrix2mpo(self.dense.weight.data.cpu().numpy())
@@ -515,21 +485,6 @@ class AlbertAttention(nn.Module):
             self.key_mpo.from_pretrained(self.input_shape, mpo_pretrain_weight, mpo_tensor_set, self.key.bias)
 
             # full rank for value component
-            mpo = MPO(self.mpo_input_shape, self.mpo_output_shape, self.config.attention_trunc)
-            mpo_tensor_set, _, _ = mpo.matrix2mpo(self.value.weight.data.cpu().numpy())
-            mpo_pretrain_weight = [i.flatten() for i in mpo_tensor_set]
-            self.value_mpo.from_pretrained(self.input_shape, mpo_pretrain_weight, mpo_tensor_set, self.value.bias)
-        elif "mpo_att" in self.config.mpo_layers:
-            att_input_shape = [self.num_attention_heads * self.mpo_input_shape[0]] + self.mpo_input_shape[1:] # 36,4,4,4,4
-            mpo = MPO(att_input_shape, self.mpo_output_shape, 192)
-            q_split = self.query.weight.data.T.view(self.hidden_size,self.num_attention_heads,self.attention_head_size) # 768,12,64
-            k_split = self.key.weight.data.view(self.num_attention_heads,self.attention_head_size,self.hidden_size) # 12,64,768
-            att_weight = torch.einsum('ibh,bhj->bij',q_split,k_split).contiguous().view(-1,self.hidden_size) # 12*768,768
-            mpo_tensor_set, _, _ = mpo.matrix2mpo(att_weight.cpu().numpy())
-
-            # tensor_set = torch.nn.ParameterList([nn.Parameter(torch.from_numpy(i).cuda(), requires_grad=True) for i in mpo_tensor_set])
-            self.atten_mpo.from_pretrained(self.input_shape, tensor_set=mpo_tensor_set, w_q=q_split, w_k_trans=k_split, bias_q=self.query.bias, bias_k=self.key.bias, use_bias=True)
-
             mpo = MPO(self.mpo_input_shape, self.mpo_output_shape, self.config.attention_trunc)
             mpo_tensor_set, _, _ = mpo.matrix2mpo(self.value.weight.data.cpu().numpy())
             mpo_pretrain_weight = [i.flatten() for i in mpo_tensor_set]

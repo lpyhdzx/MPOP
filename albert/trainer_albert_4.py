@@ -803,8 +803,7 @@ class Trainer:
         self.change_list = ['linear_step','attention_step','emb_step']
         self.state.ran = -1
         self.change_count = 0
-        # if self.args.rank_step:
-        #     bonds_value = compute_order()
+
 
         for epoch in range(epochs_trained, num_train_epochs):
             if isinstance(train_dataloader, DataLoader) and isinstance(train_dataloader.sampler, DistributedSampler):
@@ -876,25 +875,6 @@ class Trainer:
                     self.state.loss = temp_loss
                     self.control = self.callback_handler.on_step_end(self.args, self.state, self.control)
 
-                    if self.control.change_rank:
-                        self.change_count += 1
-                        ran = bonds_value.pop(0)
-                        self.state.ran = ran
-                        if ran == 1:
-                            self.args.linear_step -= 1
-                            model.albert.encoder.albert_layer_groups[0].albert_layers[0].step_trunc(step_num=self.args.linear_step)
-                            logger.info("Check truncate linear Total trainable Parameter Count: {}M truncate at: {}".format(get_parameter_number(model)['Trainable(M)'], self.args.linear_step))
-                        elif ran == 2:
-                            self.args.attention_step -= 1
-                            model.albert.encoder.albert_layer_groups[0].albert_layers[0].attention.step_trunc(step_num=self.args.attention_step)
-                            logger.info("Check truncate attention Total trainable Parameter Count: {}M truncate at: {}".format(get_parameter_number(model)['Trainable(M)'], self.args.attention_step))
-                        elif ran == 0:
-                            self.args.emb_step -= 1
-                            model.albert.embeddings.step_trunc(step_num=self.args.emb_step)
-                            logger.info("Check truncate embedding Total trainable Parameter Count: {}M truncate at: {}".format(get_parameter_number(model)['Trainable(M)'], self.args.emb_step))
-                        else:
-                            assert "Check Error: check your list length"
-                        self.control.change_rank = False
                     self._maybe_log_save_evaluate(tr_loss, model, trial, epoch)
 
                 if self.control.should_epoch_stop or self.control.should_training_stop:
