@@ -22,7 +22,7 @@ For more details about the technique of MPOP, refer to our [paper](https://arxiv
 pip install mpo_lab
  ```
 ## Lightweight fine-tuning
-In lightweight fine-tuning, we use original ALBERT without fine-tuning as to be compressed. By performing MPO decomposition on each weight matrix, we obtain four auxiliary tensors and one central tensor per tensor set. This provides a good initialization for the task-specific distillation. Refer to [run_all_albert_fine_tune.sh](https://github.com/lpyhdzx/MPOP/blob/ac958a78e1cf41d7f4117582a1aa2df3edf7e6fa/albert/run_all_albert_fine_tune.sh)
+In lightweight fine-tuning, we use original ALBERT without fine-tuning as to be compressed. By performing MPO decomposition on each weight matrix, we obtain four auxiliary tensors and one central tensor per tensor set. This provides a good initialization for the task-specific distillation. Refer to [run_all_albert_fine_tune.sh](https://github.com/lpyhdzx/MPOP/blob/a4f8208a5a6bdb2de64d7381940c46f19d0ffa65/albert/run_all_albert_fine_tune.sh)
 
 Important arguments:
 ```
@@ -36,7 +36,7 @@ Important arguments:
 --update_mpo_layer  Name of components to be update when training the model
 ```
 ## Dimension squeezing
-In Dimension squeezing, we compute approiate truncation order for the whole model. In order to re-produce the results in paper, we prepare the model after lightweight fine-tuning. Refer to [run_all_albert_fine_tune.sh](https://github.com/lpyhdzx/MPOP/blob/ac958a78e1cf41d7f4117582a1aa2df3edf7e6fa/albert/run_all_albert_fine_tune.sh)
+In Dimension squeezing, we compute approiate truncation order for the whole model. In order to re-produce the results in paper, we prepare the model after lightweight fine-tuning. Refer to [run_all_albert_fine_tune.sh](https://github.com/lpyhdzx/MPOP/blob/a4f8208a5a6bdb2de64d7381940c46f19d0ffa65/albert/run_all_albert_fine_tune.sh)
 
 albert models [google drive](https://drive.google.com/file/d/1shpcqfDemRaWhxIwcczDB_YePIyyF0bk/view?usp=sharing)
 
