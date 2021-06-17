@@ -73,6 +73,7 @@ ALBERT_PRETRAINED_MODEL_ARCHIVE_LIST = [
 ]
 
 def CalMPONum(strc_name,Dbonds):
+    # TODO: use parameter to control DphsIn and DphysOut rather than hard code
     if strc_name == 'linear':
         DphysIn,DphysOut = [4,4,8,6,4],[3,4,4,4,4]
     elif strc_name == 'attention':

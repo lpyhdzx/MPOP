@@ -84,67 +84,7 @@ STOP_RANK = 150
 SAVE_STEP = 10
 WARM_STEP = 2
 THRESH = 0.03
-class RankHander(TrainerCallback):
-    def __init__(self):
-        self.window_size = 10
-        self.thresh = THRESH
-        # self.thresh = 0.005 # RTE
-        self.linear_init = 384
-        ## stop linear
-        self.linear_stop = STOP_RANK
 
-    def on_train_begin(self, args, state, control, **kwargs):
-        self.metric_window = [0 for i in range(self.window_size)]
-        # self.best_perf = 0.12 # SST-2
-        # self.best_perf = 0.1 # qnli
-        # self.best_perf = 0.31 # mnli
-        # self.best_perf = 0.03 # RTE
-        self.best_perf = 0.33 # CoLA
-        # self.best_perf = 0.03 # sts-b
-        # self.best_perf = 0.2 # mrpc
-        # self.best_perf = 0.191 # qqp
-        # self.best_perf = 0.7 # wnli
-        self.no_converge = 0
-        self.converge = 0
-
-    def on_step_end(self, args: TrainingArguments, state: TrainerState, control: TrainerControl, model=None, **kwargs):
-        _ = self.metric_window.pop(0)
-        self.metric_window.append(state.loss)
-        self.monitor_loss = sum(self.metric_window) / self.window_size
-        if state.ran == 2:
-            CONVERGE = CONVERGE_base + 20
-        else:
-            CONVERGE = CONVERGE_base
-        if self.converge > CONVERGE or self.no_converge > NO_CONVERGE:
-            logger.info("Check reset converge and no_converge")
-            self.no_converge = 0
-            self.converge = 0
-        logger.info("Check monitor_loss: {}".format(self.monitor_loss))
-        if state.global_step < WARM_STEP:
-            logging.info("Check warm step: {}".format(state.global_step))
-            return control
-        if self.monitor_loss < (self.best_perf + self.thresh) and self.converge < CONVERGE:
-            self.converge += 1
-            logger.info("Check converge: {}".format(self.converge))
-        elif self.monitor_loss > (self.best_perf + self.thresh) and self.no_converge < NO_CONVERGE: 
-            self.no_converge += 1
-            logger.info("Check no converge {}".format(self.no_converge))
-        else:
-            if self.converge > CONVERGE-1:
-                logger.info("finish one rank attempt, continue ranks")
-                self.converge += 1
-                if args.linear_step % SAVE_STEP == 0 or args.attention_step % SAVE_STEP == 0 or args.emb_step % SAVE_STEP == 0:
-                    logger.info("Check save at {}...".format(args.linear_step))
-                    control.should_save = True
-            elif self.no_converge > NO_CONVERGE-1:
-                logger.info("finish one rank attempt, failed and stop training...")
-                control.should_save = True
-                control.should_training_stop = True 
-                self.no_converge += 1
-
-            control.change_rank = True
-
-        return control 
 @dataclass
 class CustomArguments:
     gpu_num : str = field(default='3',
@@ -169,8 +109,6 @@ class CustomArguments:
                                metadata={"help":"Layers which to update"})
     tensor_learn : Optional[bool] = field(default=False,
                                 metadata={"help":"Whether use tensor learn"})
-    rank_step : bool = field(default=False,
-                             metadata={"help" : "Whether use rank_step"})
     balance_attention : bool = field(default=False,
                             metadata={"help" : "Whether use [4,4,4,4,3]&[4,4,4,4,3] to replace [3,4,4,4,4]&[4,4,4,4,3]"})
     load_full : bool = field(default=False,
@@ -340,28 +278,15 @@ def main():
     training_args.attention_step = config.attention_trunc
     training_args.emb_step = config.emb_trunc
     training_args.pooler_step = config.pooler_trunc
-    training_args.rank_step = config.rank_step
     # Initialize our Trainer
     print("Check mpo_lr= ",training_args.mpo_lr)
-    if config.rank_step:
-        logger.info("Check using rank step for compressing")
-        trainer = Trainer(
-            model=model,
-            args=training_args,
-            train_dataset=train_dataset,
-            eval_dataset=eval_dataset,
-            compute_metrics=build_compute_metrics_fn(data_args.task_name),
-            callbacks=[RankHander]
-        )
-    else:
-        logger.info("Check without rank step")
-        trainer = Trainer(
-            model=model,
-            args=training_args,
-            train_dataset=train_dataset,
-            eval_dataset=eval_dataset,
-            compute_metrics=build_compute_metrics_fn(data_args.task_name),
-        )
+    trainer = Trainer(
+        model=model,
+        args=training_args,
+        train_dataset=train_dataset,
+        eval_dataset=eval_dataset,
+        compute_metrics=build_compute_metrics_fn(data_args.task_name),
+    )
     # Training
     if training_args.do_train:
         trainer.train(model_path=model_args.model_name_or_path if os.path.isdir(model_args.model_name_or_path) else None        )
